@@ -1,82 +1,56 @@
 import React, { useEffect, useState } from 'react';
-// import { data } from './data';
+import { data } from './data';
 import G6 from '@antv/g6';
-// import  NodeTooltips from './nodeTooltip'
-// import  EdgeToolTips  from './edgTooltip' 
-// import  NodeContextMenu from './contextMenu'
-// import './registerShape';
 
 export default function() {
+
   const ref = React.useRef(null)
-  let graph = null
+  let graph: any = null
 
-  // 边tooltip坐标
-  const [showEdgeTooltip, setShowEdgeTooltip] = useState(false)
-  const [edgeTooltipX, setEdgeTooltipX] = useState(0)
-  const [edgeTooltipY, setEdgeTooltipY] = useState(0)
-
-  // 节点tooltip坐标
-  const [showNodeTooltip, setShowNodeTooltip] = useState(false)
-  const [nodeTooltipX, setNodeToolTipX] = useState(0)
-  const [nodeTooltipY, setNodeToolTipY] = useState(0)
-
-  // 节点ContextMenu坐标
-  const [showNodeContextMenu, setShowNodeContextMenu] = useState(false)
-  const [nodeContextMenuX, setNodeContextMenuX] = useState(0)
-  const [nodeContextMenuY, setNodeContextMenuY] = useState(0)
-  const bindEvents = () => {
-    // 监听edge上面mouse事件
-    graph.on('edge:mouseenter', evt => {
-      const { item, target } = evt
-      debugger
-      const type = target.get('type')
-      if(type !== 'text') {
-        return
-      }
-      const model = item.getModel()
-      const { endPoint } = model
-      // y=endPoint.y - height / 2，在同一水平线上，x值=endPoint.x - width - 10
-      const y = endPoint.y - 35
-      const x = endPoint.x - 150 - 10
-      const point = graph.getCanvasByPoint(x, y)
-      setEdgeTooltipX(point.x)
-      setEdgeTooltipY(point.y)
-      setShowEdgeTooltip(true)
-    })
-
-    graph.on('edge:mouseleave', () => {
-      setShowEdgeTooltip(false)
-    })
-
-    // 监听node上面mouse事件
-    graph.on('node:mouseenter', evt => {
-      const { item } = evt
-      const model = item.getModel()
-      const { x, y } = model
-      const point = graph.getCanvasByPoint(x, y)
-
-      setNodeToolTipX(point.x - 75)
-      setNodeToolTipY(point.y + 15)
-      setShowNodeTooltip(true)
-    })
-  
-    // 节点上面触发mouseleave事件后隐藏tooltip和ContextMenu
-    graph.on('node:mouseleave', () => {
-      setShowNodeTooltip(false)
-      setShowNodeContextMenu(false)
-    })
-
-    // 监听节点上面右键菜单事件
-    graph.on('node:contextmenu', evt => {
-      const { item } = evt
-      const model = item.getModel()
-      const { x, y } = model
-      const point = graph.getCanvasByPoint(x, y)
-      setNodeContextMenuX(point.x)
-      setNodeContextMenuY(point.y)
-      setShowNodeContextMenu(true)
-    })
+  function clearAllStats() {
+    graph.setAutoPaint(false);
+    graph.getNodes().forEach(function (node) {
+      graph.clearItemStates(node);
+    });
+    graph.getEdges().forEach(function (edge) {
+      graph.clearItemStates(edge);
+    });
+    graph.paint();
+    graph.setAutoPaint(true);
   }
+
+  const bindEvents = () => {
+    graph.on("node:mouseenter", function (e: any) {
+      const item = e.item;
+      graph.setAutoPaint(false);
+      graph.getNodes().forEach(function (node: any) {
+        graph.clearItemStates(node);
+        graph.setItemState(node, "dark", true);
+      });
+      graph.setItemState(item, "dark", false);
+      graph.setItemState(item, "highlight", true);
+      graph.getEdges().forEach(function (edge: any) {
+        if (edge.getSource() === item) {
+          graph.setItemState(edge.getTarget(), "dark", false);
+          graph.setItemState(edge.getTarget(), "highlight", true);
+          graph.setItemState(edge, "highlight", true);
+          edge.toFront();
+        } else if (edge.getTarget() === item) {
+          graph.setItemState(edge.getSource(), "dark", false);
+          graph.setItemState(edge.getSource(), "highlight", true);
+          graph.setItemState(edge, "highlight", true);
+          edge.toFront();
+        } else {
+          graph.setItemState(edge, "highlight", false);
+        }
+      });
+      graph.paint();
+      graph.setAutoPaint(true);
+    });
+    graph.on("node:mouseleave", clearAllStats);
+    graph.on("canvas:click", clearAllStats);
+  }
+
 
   useEffect(() => {
     if(!graph) {
@@ -85,56 +59,80 @@ export default function() {
         width: 1200,
         height: 800,
         modes: {
-          default: ['drag-canvas', 'name']
-        },
-        defaultNode: {
-          shape: 'node',
-          labelCfg: {
-            style: {
-              fill: '#000000A6',
-              fontSize: 10
-            }
-          },
-          style: {
-            stroke: '#72CC4A',
-            width: 150
-          }
-        },
-        defaultEdge: {
-          shape: 'polyline'
+          default: ["drag-canvas", "name"],
         },
         layout: {
-          type: 'dagre',
-          rankdir: 'LR',
-          nodesep: 30,
-          ranksep: 100
-        }
-      })
+          type: "force",
+          edgeStrength: 0.7,
+        },
+        modes: {
+          default: [
+            "drag-canvas",
+            {
+              type: "tooltip",
+              formatText: function formatText(model) {
+                return model.name;
+              },
+              offset: 30,
+            },
+            {
+              type: "edge-tooltip",
+              formatText: function formatText(model, e) {
+                const edge = e.item;
+                return (
+                  "来源：" +
+                  edge.getSource().getModel().name +
+                  "<br/>去向：" +
+                  edge.getTarget().getModel().name
+                );
+              },
+              offset: 30,
+            },
+          ],
+        },
+        defaultNode: {
+          size: [10, 10],
+          style: {
+            lineWidth: 2,
+            fill: "#DEE9FF",
+            stroke: "#5B8FF9",
+          },
+        },
+        defaultEdge: {
+          size: 1,
+          style: {
+            stroke: "#e2e2e2",
+            lineAppendWidth: 2,
+          },
+        },
+        nodeStateStyles: {
+          highlight: {
+            opacity: 1,
+          },
+          dark: {
+            opacity: 0.2,
+          },
+        },
+        edgeStateStyles: {
+          highlight: {
+            stroke: "#999",
+          },
+        },
+      });
     }
     
-    graph.data(data)
-  
+    graph.data({
+      nodes: data.nodes,
+      edges: data.edges.map(function (edge, i) {
+        edge.id = "edge" + i;
+        return Object.assign({}, edge);
+      }),
+    });
     graph.render()
-
-    const edges = graph.getEdges()
-    edges.forEach(edge => {
-      const line = edge.getKeyShape()
-      const stroke = line.attr('stroke')
-      const targetNode = edge.getTarget()
-      targetNode.update({
-        style: { stroke }
-      })
-    })
-    graph.paint()
-
-    bindEvents()
+    bindEvents();
   }, [])
 
   return (
-    <div ref={ref}>
-      { showEdgeTooltip && <EdgeToolTips x={edgeTooltipX} y={edgeTooltipY} /> }
-      { showNodeTooltip && <NodeTooltips x={nodeTooltipX} y={nodeTooltipY} /> }
-      { showNodeContextMenu && <NodeContextMenu x={nodeContextMenuX} y={nodeContextMenuY} /> }
-    </div>
+    <div ref={ref}></div>
   );
 }
