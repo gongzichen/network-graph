@@ -9,7 +9,7 @@ import './assets/css/common.less';
 import Home from './routes/Home';
 import { ConnectedRouter } from 'connected-react-router'
 import history from './store/history'
-import 'lib-flexible'
+// import 'lib-flexible'
 ReactDom.render(
   <Provider store={store}>
     <ConnectedRouter history={history}>

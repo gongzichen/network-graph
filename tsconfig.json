@@ -8,10 +8,13 @@
     "target": "es6", // 指定ECMAScript目标版本
     "moduleResolution": "node", // 决定如何处理模块
     "strict": false,
-    "baseUrl": ".",  // 解析非相对模块的基地址
+    // "baseUrl": "src",  // 解析非相对模块的基地址
+    "baseUrl": "types",
+    "typeRoots": ["types"],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["src/*"]
     },
+    
     "lib": [
       "esnext",
       "dom"

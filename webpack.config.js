@@ -10,7 +10,6 @@ module.exports = {
     path: path.join(__dirname, "dist"), // __dirname 被执行js绝对路径
     filename: "bundle.js",
   },
-  devtool: "source-map", // 开发工具
   devServer: {
     hot: true, // 热更新
     contentBase: path.join(__dirname, "dist"), // 静态文件目录
@@ -22,7 +21,7 @@ module.exports = {
   resolve: {
     // 解析配置
     alias: {
-      "@": path.resolve(__dirname, "src"),
+      "@": path.resolve(__dirname, "src/"),
       "~": path.resolve(__dirname, "node_modules"),
     },
     extensions: [".ts", ".tsx", ".js", ".json"], // 自动寻找扩展名
